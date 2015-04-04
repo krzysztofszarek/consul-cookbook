@@ -1,0 +1,112 @@
+#!/bin/bash
+# based on:
+# https://gist.github.com/blalor/c325d500818361e28daf
+# consul        Manage the consul agent
+#       
+# chkconfig:   2345 95 01
+# description: Consul is a tool for service discovery and configuration
+# processname: consul
+# pidfile: /var/run/consul.pid
+
+### BEGIN INIT INFO
+# Provides:       consul
+# Required-Start: $local_fs $network
+# Required-Stop:
+# Should-Start:
+# Should-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop:  0 1 6
+# Short-Description: Manage the consul agent
+# Description: Consul is a tool for service discovery and configuration
+### END INIT INFO
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+PROG="consul"
+USER="root"
+CONSUL_PATH="<%= node['consul']['install_dir'] %>/$PROG"
+PIDFILE="/var/run/$PROG.pid"
+LOCKFILE="/var/lock/subsys/$PROG"
+LOGFILE="/var/log/$PROG.log"
+CONFDIR="<%= node['consul']['config_dir'] %>"
+
+export GOMAXPROCS=<%= node['consul']['gomaxprocs'] %>
+
+start() {
+    [ -x $CONSUL_PATH ] || exit 5
+    [ -d $CONFDIR ] || exit 6
+
+    umask 077
+    touch $LOGFILE $PIDFILE
+    chown $USER:$USER $LOGFILE $PIDFILE
+
+    echo -n $"Starting $PROG: "
+    daemon \
+        --pidfile=$PIDFILE \
+        --user=$USER \
+        " { $CONSUL_PATH agent -config-dir=$CONFDIR &>> $LOGFILE & } ; echo \$! >| $PIDFILE "
+    RETVAL=$?
+    echo
+    
+    [ $RETVAL -eq 0 ] && touch $LOCKFILE
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Shutting down $PROG: "
+    ## graceful shutdown with SIGINT
+    killproc -p $PIDFILE $CONSUL_PATH -INT
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && rm -f $LOCKFILE
+    return $RETVAL
+}
+
+restart() {
+    stop
+    start
+}
+
+reload() {
+    echo -n $"Reloading $PROG: "
+    killproc -p $PIDFILE $CONSUL_PATH -HUP
+    echo
+}
+
+rh_status() {
+    status -p "$PIDFILE" -l $PROG $CONSUL_PATH
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        $1
+        ;;
+    stop)
+        rh_status_q || exit 0
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    reload)
+        rh_status_q || exit 7
+        $1
+        ;;
+    force-reload)
+        force_reload
+        ;;
+    status)
+        rh_status
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|reload}"
+        exit 2
+esac
+
+exit $?
