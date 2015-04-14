@@ -1,5 +1,5 @@
 include_recipe 'consul::_install'
-include_recipe 'consul::_configure_service'
+
 template "#{node['consul']['config_dir']}/config.json" do
   source 'bootstrap.json.erb'
   owner 'root'
@@ -7,3 +7,5 @@ template "#{node['consul']['config_dir']}/config.json" do
   mode '0644'
   notifies :reload, 'service[consul]'
 end
+
+include_recipe 'consul::_configure_service'
