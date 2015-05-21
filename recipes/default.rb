@@ -16,4 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-include_recipe 'consul::bootstrap'
+include_recipe 'consul::_install'
+
+template "#{node['consul']['config_dir']}/config.json" do
+  source 'bootstrap.json.erb'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  variables(servers: node['consul']['servers'] - [node['hostname']])
+  notifies :reload, 'service[consul]'
+end
+
+include_recipe 'consul::_configure_service'

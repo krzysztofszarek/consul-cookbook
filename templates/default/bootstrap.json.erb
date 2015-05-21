@@ -1,8 +1,17 @@
 {
+<%- if node['consul']['service_mode'] == 'bootstrap' %>
     "bootstrap": true,
     "server": true,
-    "datacenter": "dc1",
+<%- elsif node['consul']['service_mode'] == 'cluster'  %>
+    "bootstrap": false,
+    "server": true,
+    "start_join": <%= @servers %>,
+<%- elsif node['consul']['service_mode'] == 'client' %>
+    "server": false,
+    "start_join": <%= @servers %>,
+<%- end %>
+    "datacenter": "<%= node['consul']['datacenter']%>",
     "data_dir": "<%= node['consul']['data_dir']%>",
     "log_level": "INFO",
-    "enable_syslog": true
+    "enable_syslog": true 
 }

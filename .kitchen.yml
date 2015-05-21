@@ -9,9 +9,20 @@ provisioner:
 
 platforms:
   - name: chef/centos-6.6
+  - name: ubuntu-14.04
 
 suites:
   - name: default
     run_list:
       - recipe[consul::default]
+    attributes:
+
+  - name: cluster
+    run_list:
+      - recipe[consul::cluster]
+    attributes:
+
+  - name: bootstrap
+    run_list:
+      - recipe[consul::bootstrap]
     attributes:
